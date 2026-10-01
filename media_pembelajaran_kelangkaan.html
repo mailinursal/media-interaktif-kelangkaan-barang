@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelangkaan Barang - Media Belajar Interaktif</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #f0fdfa; /* Teal muda yang segar */
+            color: #1e293b;
+            scroll-behavior: smooth;
+        }
+
+        /* Tema Kelangkaan: Menggunakan aksen oranye/merah peringatan dan hijau sumber daya */
+        .theme-primary { background-color: #0d9488; color: white; }
+        .theme-secondary { background-color: #f59e0b; color: white; }
+        .theme-accent { background-color: #ef4444; color: white; }
+        .theme-bg-card { background-color: #ffffff; }
+
+        .nav-btn {
+            transition: all 0.3s ease;
+        }
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .nav-btn.active {
+            background-color: #0f766e;
+            border-bottom: 4px solid #042f2e;
+        }
+
+        /* Transisi Halaman */
+        .page-section {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .page-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Flashcard Styles */
+        .flashcard-container {
+            perspective: 1000px;
+            width: 100%;
+            max-width: 400px;
+            height: 250px;
+            margin: 0 auto;
+        }
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-radius: 1rem;
+        }
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            border-radius: 1rem;
+            border: 4px solid #0d9488;
+        }
+        .flashcard-front {
+            background-color: #ccfbf1;
+            color: #0f766e;
+        }
+        .flashcard-back {
+            background-color: #0d9488;
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        /* Match Game Styles */
+        .match-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        @media (max-width: 768px) {
+            .match-container { grid-template-columns: 1fr; }
+        }
+        .match-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .match-item {
+            padding: 1rem;
+            background-color: white;
+            border: 2px solid #cbd5e1;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .match-item:hover {
+            border-color: #0d9488;
+            background-color: #f0fdfa;
+        }
+        .match-item.selected {
+            border-color: #f59e0b;
+            background-color: #fef3c7;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+        }
+        .match-item.matched {
+            background-color: #dcfce7;
+            border-color: #22c55e;
+            color: #166534;
+            cursor: default;
+            opacity: 0.8;
+        }
+        
+        /* Interactive Game Canvas */
+        #gameCanvas {
+            background-color: #87CEEB; /* Sky blue */
+            border-radius: 0.5rem;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 100%;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        /* True/False Buttons */
+        .tf-btn {
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .tf-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Quiz Styles */
+        .quiz-option {
+            transition: all 0.2s;
+        }
+        .quiz-option:hover:not(.disabled) {
+            background-color: #f1f5f9;
+            transform: translateX(5px);
+        }
+        .quiz-option.correct {
+            background-color: #dcfce7;
+            border-color: #22c55e;
+        }
+        .quiz-option.wrong {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+        .disabled {
+            pointer-events: none;
+        }
+
+        /* Decorative Elements */
+        .scarcity-icon {
+            color: #f59e0b;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="theme-primary text-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2 mb-4 md:mb-0">
+                    <i class="fas fa-exclamation-triangle scarcity-icon text-yellow-300"></i>
+                    Belajar Kelangkaan
+                </h1>
+                <nav class="flex flex-wrap justify-center gap-2">
+                    <button onclick="showPage('materi')" class="nav-btn bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded-lg font-semibold active" id="nav-materi">
+                        <i class="fas fa-book-open mr-1"></i> Materi
+                    </button>
+                    <button onclick="showPage('flashcard')" class="nav-btn bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded-lg font-semibold" id="nav-flashcard">
+                        <i class="fas fa-layer-group mr-1"></i> Flashcard
+                    </button>
+                    <button onclick="showPage('latihan')" class="nav-btn bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded-lg font-semibold" id="nav-latihan">
+                        <i class="fas fa-tasks mr-1"></i> Latihan
+                    </button>
+                    <button onclick="showPage('game')" class="nav-btn bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded-lg font-semibold" id="nav-game">
+                        <i class="fas fa-gamepad mr-1"></i> Game
+                    </button>
+                    <button onclick="showPage('kuis')" class="nav-btn bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded-lg font-semibold" id="nav-kuis">
+                        <i class="fas fa-trophy mr-1"></i> Kuis Akhir
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-8">
+        
+        <!-- SECTION: MATERI -->
+        <section id="materi" class="page-section active">
+            <div class="max-w-4xl mx-auto space-y-8">
+                
+                <div class="bg-white rounded-2xl shadow-xl p-8 border-t-8 border-teal-500">
+                    <h2 class="text-4xl font-bold text-teal-800 mb-6 text-center">Apa itu Kelangkaan?</h2>
+                    
+                    <div class="flex flex-col md:flex-row gap-8 items-center mb-8">
+                        <div class="w-full md:w-1/3 flex justify-center">
+                            <!-- Placeholder image for scarcity concept -->
+                            <img src="https://placehold.co/400x300/fef3c7/b45309?text=Kebutuhan+%3E+Alat+Pemuas" alt="Ilustrasi Kelangkaan" class="rounded-xl shadow-md w-full max-w-sm border-4 border-yellow-100">
+                        </div>
+                        <div class="w-full md:w-2/3 text-lg text-gray-700 space-y-4">
+                            <p>
+                                <strong>Kelangkaan (Scarcity)</strong> adalah keadaan di mana 
+                                <span class="text-red-600 font-bold">kebutuhan manusia tidak terbatas</span>, 
+                                sementara <span class="text-teal-600 font-bold">alat pemuas kebutuhan (sumber daya) terbatas</span>.
+                            </p>
+                            <p>
+                                Bayangkan kamu berada di padang pasir dan sangat haus (kebutuhan tak terbatas). Tapi kamu hanya punya satu botol kecil air (sumber daya terbatas). Itulah kelangkaan!
+                            </p>
+                            <div class="bg-amber-50 p-4 rounded-lg border-l-4 border-amber-500">
+                                <i class="fas fa-lightbulb text-amber-500 mr-2"></i>
+                                Inti masalah ekonomi adalah bagaimana manusia memenuhi kebutuhannya yang tak terbatas dengan sumber daya yang langka.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl shadow-md p-6 border-t-4 border-blue-500">
+                        <h3 class="text-2xl font-bold text-blue-800 mb-4 flex items-center"><i class="fas fa-list-ol mr-2"></i> Ciri-ciri Kelangkaan</h3>
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex items-start"><i class="fas fa-check-circle text-blue-500 mt-1 mr-2"></i> Alat pemuas kebutuhan (barang/jasa) tidak cukup untuk semua orang.</li>
+                            <li class="flex items-start"><i class="fas fa-check-circle text-blue-500 mt-1 mr-2"></i> Dibutuhkan pengorbanan (uang/waktu/tenaga) untuk mendapatkannya.</li>
+                            <li class="flex items-start"><i class="fas fa-check-circle text-blue-500 mt-1 mr-2"></i> Sumber daya tidak tersedia di semua tempat dalam jumlah yang sama.</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-md p-6 border-t-4 border-red-500">
+                        <h3 class="text-2xl font-bold text-red-800 mb-4 flex items-center"><i class="fas fa-search-dollar mr-2"></i> Penyebab Kelangkaan</h3>
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex items-start"><i class="fas fa-bolt text-red-500 mt-1 mr-2"></i> Pertumbuhan penduduk lebih cepat dari produksi barang.</li>
+                            <li class="flex items-start"><i class="fas fa-bolt text-red-500 mt-1 mr-2"></i> Sifat serakah manusia.</li>
+                            <li class="flex items-start"><i class="fas fa-bolt text-red-500 mt-1 mr-2"></i> Bencana alam yang merusak sumber daya.</li>
+                            <li class="flex items-start"><i class="fas fa-bolt text-red-500 mt-1 mr-2"></i> Keterbatasan kemampuan manusia mengolah sumber daya.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="text-center mt-8">
+                    <button onclick="showPage('flashcard')" class="theme-secondary hover:bg-amber-600 px-8 py-3 rounded-full font-bold text-lg shadow-lg transition-transform hover:scale-105">
+                        Lanjut ke Flashcard <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: FLASHCARD -->
+        <section id="flashcard" class="page-section">
+            <div class="max-w-3xl mx-auto text-center space-y-6">
+                <h2 class="text-4xl font-bold text-teal-800 mb-2">Flashcard Pengingat</h2>
+                <p class="text-gray-600 mb-8">Klik kartu untuk membalik dan melihat penjelasan singkat!</p>
+
+                <div class="flashcard-container" id="fc-container">
+                    <div class="flashcard" id="fc-card" onclick="flipCard()">
+                        <div class="flashcard-face flashcard-front">
+                            <h3 class="text-3xl font-bold" id="fc-term">Kelangkaan</h3>
+                        </div>
+                        <div class="flashcard-face flashcard-back">
+                            <p class="text-xl font-medium" id="fc-def">Kondisi dimana kebutuhan tidak terbatas, namun alat pemuas kebutuhan terbatas.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center items-center gap-6 mt-8">
+                    <button onclick="prevCard()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 w-12 h-12 rounded-full flex items-center justify-center text-xl shadow transition">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span id="fc-counter" class="font-bold text-lg text-teal-800">1 / 5</span>
+                    <button onclick="nextCard()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 w-12 h-12 rounded-full flex items-center justify-center text-xl shadow transition">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: LATIHAN -->
+        <section id="latihan" class="page-section">
+            <div class="max-w-4xl mx-auto space-y-12">
+                
+                <!-- True/False Section -->
+                <div class="bg-white rounded-2xl shadow-xl p-8 border-t-8 border-indigo-500">
+                    <h2 class="text-3xl font-bold text-indigo-800 mb-2 text-center">Tebak: Benar atau Salah?</h2>
+                    <p class="text-center text-gray-600 mb-6">Baca pernyataan di bawah dan pilih jawabanmu.</p>
+                    
+                    <div class="bg-indigo-50 p-6 rounded-xl text-center mb-6 min-h-[120px] flex items-center justify-center">
+                        <p id="tf-statement" class="text-2xl font-semibold text-gray-800">"Kelangkaan terjadi karena sumber daya di alam jumlahnya melimpah ruah."</p>
+                    </div>
+
+                    <div class="flex justify-center gap-4">
+                        <button onclick="checkTF(true)" class="tf-btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-md w-40">
+                            <i class="fas fa-check mr-2"></i> BENAR
+                        </button>
+                        <button onclick="checkTF(false)" class="tf-btn bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-md w-40">
+                            <i class="fas fa-times mr-2"></i> SALAH
+                        </button>
+                    </div>
+                    
+                    <div id="tf-feedback" class="mt-6 text-center font-bold text-lg hidden p-4 rounded-lg"></div>
+                    
+                    <div class="text-center mt-6">
+                        <button onclick="nextTF()" id="tf-next-btn" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-6 rounded-full font-semibold">
+                            Soal Selanjutnya
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Match Section -->
+                <div class="bg-white rounded-2xl shadow-xl p-8 border-t-8 border-amber-500">
+                    <h2 class="text-3xl font-bold text-amber-800 mb-2 text-center">Pasangkan Kata!</h2>
+                    <p class="text-center text-gray-600 mb-6">Pilih satu kotak di kiri, lalu pilih pasangannya di kotak kanan.</p>
+                    
+                    <div class="match-container">
+                        <!-- Left Side (Terms) -->
+                        <div class="match-list" id="match-terms">
+                            <!-- Populated by JS -->
+                        </div>
+                        
+                        <!-- Right Side (Definitions) -->
+                        <div class="match-list" id="match-defs">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    <div id="match-msg" class="text-center mt-6 font-bold text-xl h-8 text-amber-600"></div>
+                    <div class="text-center mt-4">
+                        <button onclick="resetMatchGame()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-6 rounded-full font-semibold">
+                            Ulangi Menjodohkan
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SECTION: GAME -->
+        <section id="game" class="page-section">
+            <div class="max-w-4xl mx-auto text-center">
+                <h2 class="text-4xl font-bold text-teal-800 mb-2">Game: Panen Sumber Daya</h2>
+                <p class="text-gray-600 mb-4">Kumpulkan <span class="text-green-600 font-bold">Sumber Daya (Apel 🍎, Air 💧, Kayu 🪵)</span> untuk memenuhi Kebutuhan.<br>
+                Hindari <span class="text-red-600 font-bold">Limbah (Sampah 🗑️)</span> yang merusak lingkungan!<br>
+                Gunakan panah Kiri/Kanan atau sentuh sisi kiri/kanan layar/canvas untuk bergerak.</p>
+                
+                <div class="flex justify-between items-center mb-4 px-4 bg-white rounded-lg p-2 shadow">
+                    <div class="text-xl font-bold text-blue-600">Skor: <span id="game-score">0</span></div>
+                    <div class="text-xl font-bold text-red-600">Nyawa: <span id="game-lives">3</span></div>
+                    <button onclick="startGame()" id="start-game-btn" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-bold shadow">
+                        Mulai Main!
+                    </button>
+                </div>
+
+                <div class="relative inline-block w-full max-w-[600px]">
+                    <canvas id="gameCanvas" width="600" height="400"></canvas>
+                    
+                    <!-- Mobile controls overlay -->
+                    <div class="absolute inset-0 flex" id="touch-controls" style="display: none;">
+                        <div class="w-1/2 h-full z-10" id="touch-left"></div>
+                        <div class="w-1/2 h-full z-10" id="touch-right"></div>
+                    </div>
+                    
+                    <!-- Game Over Screen -->
+                    <div id="game-over-screen" class="absolute inset-0 bg-black/80 hidden flex-col items-center justify-center rounded-lg text-white">
+                        <h3 class="text-4xl font-bold mb-2">Game Over!</h3>
+                        <p class="text-2xl mb-6">Skor Akhir: <span id="final-score" class="text-yellow-400">0</span></p>
+                        <button onclick="startGame()" class="bg-teal-500 hover:bg-teal-600 text-white px-8 py-3 rounded-full font-bold text-xl">
+                            Main Lagi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: KUIS AKHIR -->
+        <section id="kuis" class="page-section">
+            <div class="max-w-3xl mx-auto">
+                <div class="bg-white rounded-2xl shadow-xl p-8 border-t-8 border-yellow-500" id="quiz-container">
+                    
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <h2 class="text-3xl font-bold text-gray-800">Uji Pemahamanmu!</h2>
+                        <span class="bg-yellow-100 text-yellow-800 py-1 px-3 rounded-full font-bold text-sm" id="quiz-progress">Soal 1 / 5</span>
+                    </div>
+
+                    <div id="quiz-content">
+                        <h3 class="text-2xl font-medium text-gray-800 mb-6" id="quiz-question">Pertanyaan loading...</h3>
+                        <div class="space-y-4" id="quiz-options">
+                            <!-- Options populated by JS -->
+                        </div>
+                    </div>
+                    
+                    <div id="quiz-result-screen" class="hidden text-center py-8">
+                        <i class="fas fa-trophy text-6xl text-yellow-500 mb-4"></i>
+                        <h3 class="text-3xl font-bold text-gray-800 mb-2">Kuis Selesai!</h3>
+                        <p class="text-xl text-gray-600 mb-6">Nilai kamu: <span id="quiz-final-score" class="font-bold text-2xl text-teal-600">100</span>/100</p>
+                        <div id="quiz-feedback-msg" class="mb-8 p-4 rounded-lg bg-teal-50 text-teal-800 font-medium"></div>
+                        <button onclick="resetQuiz()" class="bg-teal-600 hover:bg-teal-700 text-white py-3 px-8 rounded-full font-bold shadow-lg">
+                            Coba Lagi
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-800 text-gray-300 py-6 text-center mt-auto">
+        <div class="container mx-auto px-4">
+            <p>&copy; 2026 Media Pembelajaran Interaktif - Kelangkaan Barang.</p>
+            <p class="text-sm mt-2">Dibuat untuk mempermudah belajar Ekonomi.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- Navigation Logic ---
+        function showPage(pageId) {
+            // Hide all sections
+            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+            // Remove active class from nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Show selected section
+            document.getElementById(pageId).classList.add('active');
+            // Highlight active button
+            document.getElementById('nav-' + pageId).classList.add('active');
+            
+            // Special handlers when entering sections
+            if(pageId === 'game') {
+                document.getElementById('touch-controls').style.display = 'flex';
+                drawGameInit(); // Just draw the initial state, don't auto-start
+            }
+        }
+
+        // --- STREAMING_CHUNK:Script - Logika Flashcard ---
+        const flashcards = [
+            { term: "Kelangkaan (Scarcity)", def: "Kondisi dimana kebutuhan manusia tidak terbatas, sedangkan alat pemuas (sumber daya) terbatas." },
+            { term: "Kebutuhan", def: "Segala sesuatu yang diperlukan manusia untuk mempertahankan hidup dan mencapai kesejahteraan." },
+            { term: "Sumber Daya Alam", def: "Segala sesuatu dari alam yang dapat digunakan untuk memenuhi kebutuhan, jumlahnya bisa terbatas." },
+            { term: "Biaya Peluang (Opportunity Cost)", def: "Pengorbanan yang dilakukan (alternatif terbaik yang ditinggalkan) ketika kita memilih suatu pilihan karena adanya kelangkaan." },
+            { term: "Skala Prioritas", def: "Daftar urutan kebutuhan yang disusun berdasarkan tingkat kepentingan, dari yang mendesak sampai yang bisa ditunda." }
+        ];
+        let currentCard = 0;
+        let isFlipped = false;
+
+        const cardElement = document.getElementById('fc-card');
+        const termElement = document.getElementById('fc-term');
+        const defElement = document.getElementById('fc-def');
+        const counterElement = document.getElementById('fc-counter');
+
+        function updateCard() {
+            isFlipped = false;
+            cardElement.classList.remove('flipped');
+            // Wait for flip animation before changing text to prevent weird visual
+            setTimeout(() => {
+                termElement.innerText = flashcards[currentCard].term;
+                defElement.innerText = flashcards[currentCard].def;
+                counterElement.innerText = `${currentCard + 1} / ${flashcards.length}`;
+            }, 150);
+        }
+
+        function flipCard() {
+            isFlipped = !isFlipped;
+            if (isFlipped) {
+                cardElement.classList.add('flipped');
+            } else {
+                cardElement.classList.remove('flipped');
+            }
+        }
+
+        function nextCard() {
+            currentCard = (currentCard + 1) % flashcards.length;
+            updateCard();
+        }
+
+        function prevCard() {
+            currentCard = (currentCard - 1 + flashcards.length) % flashcards.length;
+            updateCard();
+        }
+
+
+        // --- STREAMING_CHUNK:Script - Logika Soal Benar/Salah ---
+        const tfQuestions = [
+            { q: "Kelangkaan terjadi karena sumber daya di alam jumlahnya melimpah ruah dan tidak akan habis.", a: false, exp: "Salah. Kelangkaan terjadi justru karena sumber daya alam jumlahnya terbatas." },
+            { q: "Membuat skala prioritas adalah salah satu cara mengatasi masalah kelangkaan.", a: true, exp: "Benar. Dengan skala prioritas, kita mendahulukan kebutuhan yang paling penting." },
+            { q: "Kebutuhan manusia sifatnya terbatas dan cepat puas.", a: false, exp: "Salah. Sifat dasar manusia adalah kebutuhannya tidak terbatas dan terus bertambah." },
+            { q: "Biaya peluang muncul karena kita harus memilih salah satu dari beberapa pilihan akibat kelangkaan.", a: true, exp: "Benar. Karena tidak bisa memilih semua, kita harus mengorbankan pilihan lain." }
+        ];
+        let currentTF = 0;
+
+        const tfStatement = document.getElementById('tf-statement');
+        const tfFeedback = document.getElementById('tf-feedback');
+        const tfNextBtn = document.getElementById('tf-next-btn');
+        const tfButtons = document.querySelectorAll('.tf-btn');
+
+        function loadTF() {
+            tfStatement.innerText = `"${tfQuestions[currentTF].q}"`;
+            tfFeedback.classList.add('hidden');
+            tfNextBtn.classList.add('hidden');
+            tfButtons.forEach(btn => btn.disabled = false);
+            tfFeedback.className = "mt-6 text-center font-bold text-lg hidden p-4 rounded-lg"; // reset classes
+        }
+
+        function checkTF(answer) {
+            const correct = answer === tfQuestions[currentTF].a;
+            tfButtons.forEach(btn => btn.disabled = true);
+            
+            tfFeedback.classList.remove('hidden');
+            if (correct) {
+                tfFeedback.classList.add('bg-green-100', 'text-green-800');
+                tfFeedback.innerHTML = `<i class="fas fa-check-circle mr-2 text-2xl align-middle"></i> <strong>Hebat! Jawabanmu Benar.</strong><br><span class="text-sm font-normal mt-2 block">${tfQuestions[currentTF].exp}</span>`;
+            } else {
+                tfFeedback.classList.add('bg-red-100', 'text-red-800');
+                tfFeedback.innerHTML = `<i class="fas fa-times-circle mr-2 text-2xl align-middle"></i> <strong>Oops! Kurang Tepat.</strong><br><span class="text-sm font-normal mt-2 block">${tfQuestions[currentTF].exp}</span>`;
+            }
+            tfNextBtn.classList.remove('hidden');
+        }
+
+        function nextTF() {
+            currentTF++;
+            if (currentTF >= tfQuestions.length) {
+                currentTF = 0; // loop back
+            }
+            loadTF();
+        }
+
+
+        // --- STREAMING_CHUNK:Script - Logika Game Menjodohkan ---
+        const matchData = [
+            { id: 1, term: "Kebutuhan Primer", def: "Pangan, sandang, papan" },
+            { id: 2, term: "Barang Bebas", def: "Sinar matahari, udara" },
+            { id: 3, term: "Barang Ekonomi", def: "Baju, makanan di restoran" },
+            { id: 4, term: "Skala Prioritas", def: "Urutan kebutuhan terpenting" }
+        ];
+
+        let selectedTerm = null;
+        let selectedDef = null;
+        let matchesFound = 0;
+
+        function initMatchGame() {
+            const termsContainer = document.getElementById('match-terms');
+            const defsContainer = document.getElementById('match-defs');
+            termsContainer.innerHTML = '';
+            defsContainer.innerHTML = '';
+            matchesFound = 0;
+            document.getElementById('match-msg').innerText = '';
+
+            // Shuffle arrays independent of each other
+            const shuffledTerms = [...matchData].sort(() => Math.random() - 0.5);
+            const shuffledDefs = [...matchData].sort(() => Math.random() - 0.5);
+
+            shuffledTerms.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'match-item term-item font-bold text-gray-800';
+                el.innerText = item.term;
+                el.dataset.id = item.id;
+                el.onclick = () => selectItem(el, 'term');
+                termsContainer.appendChild(el);
+            });
+
+            shuffledDefs.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'match-item def-item text-gray-600';
+                el.innerText = item.def;
+                el.dataset.id = item.id;
+                el.onclick = () => selectItem(el, 'def');
+                defsContainer.appendChild(el);
+            });
+        }
+
+        function selectItem(element, type) {
+            if (element.classList.contains('matched')) return;
+
+            // Handle selection styling
+            if (type === 'term') {
+                if (selectedTerm) selectedTerm.classList.remove('selected');
+                selectedTerm = element;
+                selectedTerm.classList.add('selected');
+            } else {
+                if (selectedDef) selectedDef.classList.remove('selected');
+                selectedDef = element;
+                selectedDef.classList.add('selected');
+            }
+
+            // Check match if both selected
+            if (selectedTerm && selectedDef) {
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            if (selectedTerm.dataset.id === selectedDef.dataset.id) {
+                // Match!
+                selectedTerm.classList.remove('selected');
+                selectedDef.classList.remove('selected');
+                selectedTerm.classList.add('matched');
+                selectedDef.classList.add('matched');
+                
+                // Add icon
+                selectedTerm.innerHTML += ' <i class="fas fa-check text-green-600 ml-2"></i>';
+                
+                matchesFound++;
+                document.getElementById('match-msg').innerHTML = `<span class="text-green-500">Benar!</span>`;
+                
+                if (matchesFound === matchData.length) {
+                    document.getElementById('match-msg').innerHTML = `<span class="text-green-600 font-bold"><i class="fas fa-star text-yellow-400"></i> Sempurna! Semua terpasang.</span>`;
+                }
+            } else {
+                // No match
+                const t = selectedTerm;
+                const d = selectedDef;
+                document.getElementById('match-msg').innerHTML = `<span class="text-red-500">Bukan pasangannya, coba lagi.</span>`;
+                
+                setTimeout(() => {
+                    t.classList.remove('selected');
+                    d.classList.remove('selected');
+                    document.getElementById('match-msg').innerText = '';
+                }, 800);
+            }
+            selectedTerm = null;
+            selectedDef = null;
+        }
+
+        function resetMatchGame() {
+            selectedTerm = null;
+            selectedDef = null;
+            initMatchGame();
+        }
+
+        // --- STREAMING_CHUNK:Script - Logika Kuis Pilihan Ganda ---
+        const quizData = [
+            {
+                q: "Apa inti dari masalah ekonomi?",
+                options: [
+                    "Banyaknya orang miskin",
+                    "Kebutuhan yang tidak terbatas dihadapkan dengan sumber daya yang terbatas",
+                    "Harga barang yang selalu naik setiap tahun",
+                    "Sulitnya mencari pekerjaan"
+                ],
+                ans: 1
+            },
+            {
+                q: "Air di sungai untuk cuci muka adalah barang bebas. Tetapi air minum dalam kemasan di supermarket adalah barang...",
+                options: ["Barang Substitusi", "Barang Mentah", "Barang Ekonomi", "Barang Komplementer"],
+                ans: 2
+            },
+            {
+                q: "Ani punya uang Rp 50.000. Ia ingin beli buku tulis (sangat butuh) dan es krim (keinginan). Jika Ani mendahulukan beli buku tulis, apa yang diterapkan Ani?",
+                options: ["Biaya Peluang", "Skala Prioritas", "Prinsip Konsumsi", "Tindakan Emosional"],
+                ans: 1
+            },
+            {
+                q: "Salah satu penyebab terjadinya kelangkaan adalah...",
+                options: ["Bencana alam yang merusak fasilitas", "Masyarakat rajin menabung", "Pemerintah membangun banyak jalan", "Teknologi semakin maju"],
+                ans: 0
+            },
+            {
+                q: "Biaya yang dikorbankan (alternatif yang tidak dipilih) saat seseorang memilih suatu pilihan lain disebut...",
+                options: ["Biaya Sehari-hari", "Biaya Tak Terduga", "Biaya Produksi", "Biaya Peluang"],
+                ans: 3
+            }
+        ];
+
+        let currentQuiz = 0;
+        let quizScore = 0;
+
+        const quizQuestion = document.getElementById('quiz-question');
+        const quizOptions = document.getElementById('quiz-options');
+        const quizProgress = document.getElementById('quiz-progress');
+        const quizContainerElement = document.getElementById('quiz-content');
+        const quizResultScreen = document.getElementById('quiz-result-screen');
+
+        function loadQuiz() {
+            const qData = quizData[currentQuiz];
+            quizQuestion.innerText = `${currentQuiz + 1}. ${qData.q}`;
+            quizProgress.innerText = `Soal ${currentQuiz + 1} / ${quizData.length}`;
+            
+            quizOptions.innerHTML = '';
+            qData.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'quiz-option w-full text-left p-4 rounded-xl border-2 border-gray-200 font-medium text-gray-700 bg-white hover:border-teal-400 focus:outline-none';
+                btn.innerHTML = `<span class="inline-block w-8 h-8 bg-gray-100 text-center leading-8 rounded-full mr-3 font-bold">${String.fromCharCode(65 + index)}</span> ${opt}`;
+                btn.onclick = () => selectQuizOption(index, btn);
+                quizOptions.appendChild(btn);
+            });
+        }
+
+        function selectQuizOption(selectedIndex, btnElement) {
+            // Disable all options
+            const allOptions = quizOptions.querySelectorAll('.quiz-option');
+            allOptions.forEach(btn => btn.classList.add('disabled'));
+
+            const correctIndex = quizData[currentQuiz].ans;
+
+            if (selectedIndex === correctIndex) {
+                btnElement.classList.add('correct');
+                btnElement.innerHTML += ' <i class="fas fa-check-circle float-right text-green-500 text-2xl"></i>';
+                quizScore += 20; // 5 questions * 20 = 100
+            } else {
+                btnElement.classList.add('wrong');
+                btnElement.innerHTML += ' <i class="fas fa-times-circle float-right text-red-500 text-2xl"></i>';
+                // highlight correct answer
+                allOptions[correctIndex].classList.add('correct');
+            }
+
+            setTimeout(() => {
+                currentQuiz++;
+                if (currentQuiz < quizData.length) {
+                    loadQuiz();
+                } else {
+                    showQuizResult();
+                }
+            }, 1500);
+        }
+
+        function showQuizResult() {
+            quizContainerElement.classList.add('hidden');
+            quizProgress.parentElement.classList.add('hidden'); // hide header
+            quizResultScreen.classList.remove('hidden');
+            
+            document.getElementById('quiz-final-score').innerText = quizScore;
+            
+            let msg = '';
+            if (quizScore === 100) msg = "Sempurna! Kamu sangat paham materi kelangkaan.";
+            else if (quizScore >= 60) msg = "Bagus! Pemahamanmu sudah cukup baik.";
+            else msg = "Jangan menyerah! Coba baca materinya lagi dan ulangi kuisnya.";
+            
+            document.getElementById('quiz-feedback-msg').innerText = msg;
+        }
+
+        function resetQuiz() {
+            currentQuiz = 0;
+            quizScore = 0;
+            quizContainerElement.classList.remove('hidden');
+            quizProgress.parentElement.classList.remove('hidden');
+            quizResultScreen.classList.add('hidden');
+            loadQuiz();
+        }
+
+
+        // --- STREAMING_CHUNK:Script - Logika Game Interaktif HTML5 Canvas ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let gameAnimationId;
+        let gameActive = false;
+        
+        let score = 0;
+        let lives = 3;
+        
+        // Player (The Basket/Cart)
+        const player = {
+            x: canvas.width / 2 - 30,
+            y: canvas.height - 50,
+            width: 60,
+            height: 40,
+            speed: 7,
+            dx: 0
+        };
+
+        // Arrays for falling items
+        let items = [];
+        let wastes = [];
+        
+        const emojis = {
+            good: ['🍎', '💧', '🪵', '💰'],
+            bad: ['🗑️', '☠️', '🛢️']
+        };
+
+        // Resize handling for responsiveness (basic scale)
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            if(window.innerWidth < 640) {
+                 // scale down visual display on small screens, keep internal logic 600x400
+                 canvas.style.width = '100%';
+                 canvas.style.height = 'auto';
+            } else {
+                canvas.style.width = '600px';
+                 canvas.style.height = '400px';
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function drawPlayer() {
+            // Draw a simple cart/basket
+            ctx.fillStyle = '#8B4513'; // SaddleBrown
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            // Wheels
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(player.x + 10, player.y + player.height, 10, 0, Math.PI * 2);
+            ctx.arc(player.x + player.width - 10, player.y + player.height, 10, 0, Math.PI * 2);
+            ctx.fill();
+            // Label
+            ctx.fillStyle = 'white';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Kebutuhan', player.x + player.width/2, player.y + 25);
+        }
+
+        function createItem() {
+            if(!gameActive) return;
+            const x = Math.random() * (canvas.width - 30);
+            const isGood = Math.random() > 0.3; // 70% chance good item
+            
+            const arr = isGood ? emojis.good : emojis.bad;
+            const emoji = arr[Math.floor(Math.random() * arr.length)];
+            
+            const item = {
+                x: x,
+                y: -30,
+                width: 30,
+                height: 30,
+                speed: 2 + Math.random() * 3 + (score / 50), // speed increases slightly with score
+                emoji: emoji,
+                type: isGood ? 'good' : 'bad'
+            };
+            
+            if(isGood) items.push(item);
+            else wastes.push(item);
+
+            // Schedule next item
+            setTimeout(createItem, Math.random() * 1000 + 500 - (Math.min(score, 200))); 
+        }
+
+        function drawItems(arr) {
+            ctx.font = '30px Arial';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            arr.forEach(item => {
+                ctx.fillText(item.emoji, item.x, item.y);
+            });
+        }
+
+        function updateItems(arr) {
+            for(let i = 0; i < arr.length; i++) {
+                arr[i].y += arr[i].speed;
+                
+                // Collision detection
+                if (arr[i].y + arr[i].height > player.y &&
+                    arr[i].x < player.x + player.width &&
+                    arr[i].x + arr[i].width > player.x &&
+                    arr[i].y < player.y + player.height) {
+                        
+                    // Hit!
+                    if(arr[i].type === 'good') {
+                        score += 10;
+                        document.getElementById('game-score').innerText = score;
+                    } else {
+                        lives--;
+                        document.getElementById('game-lives').innerText = lives;
+                        // Flash red
+                        ctx.fillStyle = 'rgba(255,0,0,0.5)';
+                        ctx.fillRect(0,0,canvas.width, canvas.height);
+                    }
+                    
+                    arr.splice(i, 1);
+                    i--;
+                    
+                    if(lives <= 0) {
+                        gameOver();
+                    }
+                } 
+                // Missed good items (scarcity consequence)
+                else if (arr[i].y > canvas.height) {
+                    /* Optional: If missed good resource, maybe slight penalty or just let it go. 
+                       For simplicity, we just remove it here. */
+                    arr.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        function clear() {
+            // Sky background
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Ground
+            ctx.fillStyle = '#228B22'; // ForestGreen
+            ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+        }
+
+        function updatePlayer() {
+            player.x += player.dx;
+            
+            // Wall collision
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+        }
+
+        function drawGameInit() {
+            clear();
+            drawPlayer();
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Klik Mulai Main untuk memulai!', canvas.width/2, canvas.height/2);
+        }
+
+        function gameLoop() {
+            if(!gameActive) return;
+            
+            clear();
+            drawPlayer();
+            
+            updatePlayer();
+            
+            drawItems(items);
+            updateItems(items);
+            
+            drawItems(wastes);
+            updateItems(wastes);
+            
+            gameAnimationId = requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            document.getElementById('start-game-btn').style.display = 'none';
+            document.getElementById('game-over-screen').classList.add('hidden');
+            
+            score = 0;
+            lives = 3;
+            document.getElementById('game-score').innerText = score;
+            document.getElementById('game-lives').innerText = lives;
+            
+            player.x = canvas.width / 2 - 30;
+            items = [];
+            wastes = [];
+            
+            gameActive = true;
+            createItem(); // start spawning
+            gameLoop();
+        }
+
+        function gameOver() {
+            gameActive = false;
+            cancelAnimationFrame(gameAnimationId);
+            document.getElementById('start-game-btn').style.display = 'inline-block';
+            document.getElementById('start-game-btn').innerText = "Main Lagi";
+            document.getElementById('game-over-screen').classList.remove('hidden');
+            document.getElementById('game-over-screen').classList.add('flex');
+            document.getElementById('final-score').innerText = score;
+        }
+
+        // --- Keyboard Controls ---
+        document.addEventListener('keydown', (e) => {
+            if(!gameActive) return;
+            if (e.key === 'ArrowRight' || e.key === 'Right') {
+                player.dx = player.speed;
+            } else if (e.key === 'ArrowLeft' || e.key === 'Left') {
+                player.dx = -player.speed;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'Right' || e.key === 'ArrowLeft' || e.key === 'Left') {
+                player.dx = 0;
+            }
+        });
+
+        // --- Touch Controls for Mobile ---
+        const touchLeft = document.getElementById('touch-left');
+        const touchRight = document.getElementById('touch-right');
+
+        // Prevent default touch behavior to stop scrolling while playing
+        canvas.addEventListener('touchstart', (e) => { if(gameActive) e.preventDefault(); }, {passive: false});
+
+        touchLeft.addEventListener('touchstart', (e) => { if(gameActive) { e.preventDefault(); player.dx = -player.speed; } });
+        touchLeft.addEventListener('touchend', (e) => { if(gameActive) { e.preventDefault(); player.dx = 0; } });
+        
+        touchRight.addEventListener('touchstart', (e) => { if(gameActive) { e.preventDefault(); player.dx = player.speed; } });
+        touchRight.addEventListener('touchend', (e) => { if(gameActive) { e.preventDefault(); player.dx = 0; } });
+
+
+        // --- STREAMING_CHUNK:Inisialisasi Saat Halaman Dimuat ---
+        window.onload = function() {
+            updateCard();
+            loadTF();
+            initMatchGame();
+            loadQuiz();
+            drawGameInit();
+        }
+
+    </script>
+</body>
+</html>
